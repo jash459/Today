@@ -1,0 +1,56 @@
+// Link: https://takeuforward.org/data-structure/longest-bitonic-subsequence-dp-46/
+
+// video: https://www.youtube.com/watch?v=y4vN0WNdrlg
+
+#include <bits/stdc++.h>
+using namespace std;
+
+// Function to find the length of the longest bitonic subsequence
+int longestBitonicSequence(vector<int>& arr, int n) {
+    // Initialize two arrays to store the increasing and decreasing subsequences
+    vector<int> dp1(n, 1); // dp1[i] stores the length of the longest increasing subsequence ending at arr[i]
+    vector<int> dp2(n, 1); // dp2[i] stores the length of the longest decreasing subsequence ending at arr[i]
+
+    // Calculate the longest increasing subsequence
+    for (int i = 0; i < n; i++) {
+        for (int prev_index = 0; prev_index < i; prev_index++) {
+            if (arr[prev_index] < arr[i]) {
+                dp1[i] = max(dp1[i], 1 + dp1[prev_index]);
+            }
+        }
+    }
+
+    // Reverse the direction of nested loops to calculate the longest decreasing subsequence
+    for (int i = n - 1; i >= 0; i--) {
+        for (int prev_index = n - 1; prev_index > i; prev_index--) {
+            if (arr[prev_index] < arr[i]) {
+                dp2[i] = max(dp2[i], 1 + dp2[prev_index]);
+            }
+        }
+    }
+
+    int maxi = -1;
+
+    // Find the maximum length of the bitonic subsequence
+    for (int i = 0; i < n; i++) {
+        maxi = max(maxi, dp1[i] + dp2[i] - 1);
+    }
+
+    return maxi;
+}
+
+int main() {
+    vector<int> arr = {1, 11, 2, 10, 4, 5, 2, 1};
+    int n = arr.size();
+
+    cout << "The length of the longest bitonic subsequence is " << longestBitonicSequence(arr, n) << endl;
+
+    return 0;
+}
+// Output:
+// The length of the longest bitonic subsequence is 6
+// Time Complexity: O(N*N)
+// Reason: There are two nested loops that are run twice.
+// Space Complexity: O(N)
+// Reason: We are only using two rows of size n.
+
