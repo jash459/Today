@@ -33,7 +33,7 @@ Space Complexity: O(1)
 // this is also optimal
 #include <bits/stdc++.h>
 
-using namespace std;git 
+using namespace std;
 class Solution {
   public:
     int largestRectangleArea(vector < int > & heights) {

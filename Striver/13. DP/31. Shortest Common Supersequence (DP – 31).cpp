@@ -65,6 +65,8 @@ string shortestSupersequence(string s1, string s2){
   reverse(ans.begin(),ans.end());
   
   return ans;
+  /*
+  If they are to print the length -> n + m - lcs(s1,s2)*/
 }
 
 int main() {
