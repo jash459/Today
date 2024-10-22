@@ -2,7 +2,9 @@
 
 int isValid(string s) {
     // Step 1: Check if the string contains any alphabetic characters
-    if(any_of(s.begin(), s.end(), ::isalpha)) return 0;
+    for (char c : s) {
+        if (isalpha(c)) return 0;  // If any character is a letter, return 0
+    }
 
     // Step 2: Split the string into parts based on dots
     vector<string> v;

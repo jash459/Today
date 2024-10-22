@@ -4,84 +4,45 @@ Sure! Let’s structure the **Amazon Locker System** code and explanation simila
 
 The Amazon Locker system allows users to store and retrieve packages securely. It manages locker assignments, ensures efficient package retrieval, and handles different package sizes, allowing for scalability and maintainability.
 
----
 
-### 2. **System Requirements and Solutions**
+### 2. **System Requirements**
 
-1. **Locker Management**  
-   - *Solution*: The `Locker` class represents a locker that can store packages. It has properties like size and availability.
+- **Package Management**: The system should allow for the storage and retrieval of packages in lockers.
+- **Locker Management**: It should manage lockers of different sizes (small, medium, large) and assign them based on package sizes.
+- **Optimal Locker Assignment**: The system should find the optimal locker for a package based on its size.
+- **Clean-Up**: Dynamically allocated lockers should be properly released when the system is destroyed.
 
-2. **Package Handling**  
-   - *Solution*: The `Package` class defines the attributes of packages, including size and ID, enabling efficient storage and retrieval.
+### 3. **Solution Overview**
 
-3. **Package Assignment**  
-   - *Solution*: The `PickupLocation` class manages lockers and handles the assignment of packages to available lockers based on size.
+The Amazon Locker System consists of several classes:
+1. **Package**: Represents a package with properties such as size and a unique ID.
+2. **Locker**: Represents a locker that can store a package, with properties for size and availability.
+3. **PickupLocation**: Manages the overall operations, including assigning packages to lockers, retrieving packages, and managing available lockers.
 
-4. **Package Retrieval**  
-   - *Solution*: Packages can be retrieved from their assigned lockers, ensuring users can access their items easily.
+### 4. **Classes and Functions**
 
-5. **Traffic Management**  
-   - *Solution*: The system prioritizes larger packages for lockers during peak times, ensuring better space utilization.
+1. **Package Class**:
+   - **Properties**: `size`, `id`.
+   - **Methods**: Constructor to initialize a package with size and ID.
 
----
+2. **Locker Class**:
+   - **Properties**: `size`, `id`, `storedPackage`.
+   - **Methods**:
+     - `storePackage(Package*)`: Stores a package in the locker.
+     - `releasePackage()`: Releases the stored package from the locker.
+     - `isEmpty()`: Checks if the locker is empty.
+     - `getSize()`: Returns the size of the locker.
+     - `getId()`: Returns the locker ID.
 
-### 3. **Key Classes, Functions, and Relationships**
+3. **PickupLocation Class**:
+   - **Properties**: `availableLockers`, `packageMap`.
+   - **Methods**:
+     - `assignPackage(Package*)`: Assigns a package to the first available locker of matching size or larger.
+     - `retrievePackage(const string&)`: Retrieves a package based on its ID.
+     - `findOptimalLocker(Package*)`: Finds the optimal locker for a package.
+     - Destructor to clean up dynamically allocated lockers.
 
-1. **Class: `Package`**  
-   - Represents a package with size and ID attributes. Provides methods to access its size and ID.
-
-2. **Class: `Locker`**  
-   - Represents a locker with a size and manages the storage of a package.
-
-3. **Class: `PickupLocation`**  
-   - Manages multiple lockers and their availability. Assigns packages to lockers based on their size and retrieves them.
-
----
-
-### 4. **Data Structures Used**
-
-- **Map** (in `PickupLocation`):  
-   - Used to map package IDs to their respective lockers, enabling quick access to retrieve packages.
-   - **Complexity**: O(1) for lookups and inserts.
-
-- **Queue** (for available lockers):  
-   - Used to efficiently manage available lockers of different sizes.
-   - **Complexity**: O(1) for insertions and O(n) for lookups based on queue size.
-
----
-
-### 5. **High-Level Design**
-
-- **Package**: Represents the package with attributes like size and ID.
-- **Locker**: Manages the storage and retrieval of packages.
-- **PickupLocation**: Oversees the assignment of packages to lockers and handles retrieval processes.
-
----
-
-### 6. **Clarifications to Ask the Interviewer (with Solutions)**
-
-1. **What types of packages will be stored?**  
-   - *Solution*: If there are multiple package sizes (e.g., small, medium, large), the system should support them effectively by prioritizing their placement.
-
-2. **Should the system support user notifications?**  
-   - *Solution*: If required, notifications can be added for users when their package is ready for pickup.
-
-3. **Are there limits on locker usage?**  
-   - *Solution*: If there are limits, the system should handle locker capacity and manage overflow scenarios efficiently.
-
----
-
-### 7. **Open-Ended Questions from the Interviewer**
-
-1. **How would you scale the system for thousands of lockers?**  
-   - *Solution*: Implement a distributed system for managing lockers across multiple locations, utilizing microservices for scalability.
-
-2. **How would you manage expired packages in lockers?**  
-   - *Solution*: Introduce a timestamp for each package, and periodically check for expired packages for automatic retrieval or notification.
-
----
-
-### 8. **C++ Code Implementation**
+### Complete Code
 
 ```cpp
 #include <iostream>
@@ -91,6 +52,7 @@ The Amazon Locker system allows users to store and retrieve packages securely. I
 
 using namespace std;
 
+// Enum for Package Sizes
 enum Size { SMALL, MEDIUM, LARGE }; // Enum for package sizes
 
 // Class representing a package
@@ -149,6 +111,13 @@ private:
     unordered_map<Size, queue<Locker*>> availableLockers; // Map of available lockers by size
     unordered_map<string, Locker*> packageMap; // Map of package ID to locker
 
+    // Function to get the next size
+    Size getNextSize(Size sz) {
+        if (sz == SMALL) return MEDIUM;
+        if (sz == MEDIUM) return LARGE;
+        return LARGE; // Return LARGE if already at the largest size
+    }
+
 public:
     PickupLocation(unordered_map<Size, int> lockerSizes) {
         // Initialize lockers for each size
@@ -164,15 +133,19 @@ public:
     }
 
     Locker* assignPackage(Package* package) {
-        // Assign package to an available locker based on size
-        for (Size sz = package->getSize(); sz <= LARGE; sz = static_cast<Size>(sz + 1)) {
-            if (!availableLockers[sz].empty()) {
-                Locker* locker = availableLockers[sz].front(); // Get available locker
-                availableLockers[sz].pop(); // Remove from queue
+        // Attempt to assign package to an available locker based on size
+        Size currentSize = package->getSize();
+        while (true) {
+            if (!availableLockers[currentSize].empty()) {
+                Locker* locker = availableLockers[currentSize].front(); // Get available locker
+                availableLockers[currentSize].pop(); // Remove from queue
                 locker->storePackage(package); // Store package
                 packageMap[package->getId()] = locker; // Map package ID to locker
                 return locker;
             }
+            // If no locker of current size is available, check for the next size
+            currentSize = getNextSize(currentSize);
+            if (currentSize > LARGE) break; // No more sizes available
         }
         return nullptr; // No locker available
     }
@@ -187,6 +160,12 @@ public:
         return package;
     }
 
+    // Delivery guy finds an optimal locker
+    Locker* findOptimalLocker(Package* package) {
+        // Simply assign to the first available locker of the matching size or larger
+        return assignPackage(package);
+    }
+
     ~PickupLocation() {
         // Clean up dynamically allocated lockers
         for (auto& entry : availableLockers) {
@@ -198,6 +177,7 @@ public:
     }
 };
 
+// Main function demonstrating the Amazon Locker System
 int main() {
     unordered_map<Size, int> lockerSizes = {
         { SMALL, 2 },
@@ -211,16 +191,19 @@ int main() {
     Package* package1 = new Package(SMALL);
     Package* package2 = new Package(MEDIUM);
     Package* package3 = new Package(SMALL);
+    Package* package4 = new Package(LARGE);
 
     // Assign packages to lockers
     Locker* locker1 = location.assignPackage(package1);
     Locker* locker2 = location.assignPackage(package2);
     Locker* locker3 = location.assignPackage(package3);
+    Locker* locker4 = location.assignPackage(package4);
 
     // Output assignments
     if (locker1) cout << "Package 1 assigned to locker: " << locker1->getId() << endl;
     if (locker2) cout << "Package 2 assigned to locker: " << locker2->getId() << endl;
     if (locker3) cout << "Package 3 assigned to locker: " << locker3->getId() << endl;
+    if (locker4) cout << "Package 4 assigned to locker: " << locker4->getId() << endl;
 
     // Retrieve a package
     Package* retrievedPackage = location.retrievePackage(package1->getId());
@@ -230,15 +213,18 @@ int main() {
     delete package1;
     delete package2;
     delete package3;
+    delete package4;
 
     return 0;
 }
 ```
 
-### Explanation of Code
-- **`Package`**: Represents a package with size and ID. It provides methods to retrieve these attributes.
-- **`Locker`**: Represents a locker that can store a package. It manages the package's storage and retrieval, and maintains its size and ID.
-- **`PickupLocation`**: Manages multiple lockers. It assigns packages to available lockers based on size and retrieves them when needed.
-- **Memory Management**: Dynamically allocated lockers are cleaned up in the destructor of `PickupLocation`.
+### 5. **Explanation of the Code**
 
-This design provides a clear, scalable, and maintainable locker system for Amazon, with the potential for future enhancements such as handling more complex package management or notifications.
+- **Package Class**: Represents a package with attributes such as size and a unique ID. It includes a constructor to initialize a package with a size and generate a random ID.
+
+- **Locker Class**: Represents a locker that can store a package. It includes methods to store and release packages, check if the locker is empty, and retrieve the locker size and ID.
+
+- **PickupLocation Class**: Manages the lockers and package assignments. It includes methods to assign packages to lockers based on size, retrieve packages, and find the optimal locker for a package. It also cleans up dynamically allocated lockers upon destruction.
+
+This solution implements a comprehensive Amazon Locker System, providing efficient management of packages and lockers while ensuring smooth assignment and retrieval processes.
